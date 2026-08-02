@@ -11,6 +11,8 @@ export default function Account() {
   const [username, setUsername] = useState('')
   const [msg, setMsg] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState(null)   // 'signup' | 'unconfirmed'
+  const [resent, setResent] = useState(null)
 
   if (!auth.enabled) {
     return (
@@ -38,6 +40,12 @@ export default function Account() {
         <div className="panel">
           <div className="slip-line"><span>Signed in as</span><b>{auth.profile?.username ?? '…'}</b></div>
           <div className="slip-line"><span>Email</span><b>{auth.user.email}</b></div>
+          <div className="slip-line">
+            <span>Verified</span>
+            <b className={auth.emailConfirmed ? 'win' : 'push'}>
+              {auth.emailConfirmed ? '✓ Confirmed' : 'Not confirmed yet'}
+            </b>
+          </div>
           <div className="slip-line"><span>Balance</span><b>{fmtBtc(w.btc)}</b></div>
           <div className="slip-line"><span>Sync</span><b className="win">Cloud — follows you everywhere</b></div>
           <button className="bet-btn secondary" onClick={auth.signOut}>Sign out</button>
@@ -48,15 +56,56 @@ export default function Account() {
 
   const submit = async e => {
     e.preventDefault()
-    setBusy(true); setMsg(null)
+    setBusy(true); setMsg(null); setResent(null)
     const res = mode === 'signup'
       ? await auth.signUp(email, password, username)
       : await auth.signIn(email, password)
     setBusy(false)
+
+    // unverified sign-in isn't a dead end — offer the resend
+    if (res.unconfirmed) return setPending('unconfirmed')
     if (res.error) return setMsg({ cls: 'lose', text: res.error })
-    if (mode === 'signup') {
-      setMsg({ cls: 'win', text: 'Account created. If email confirmation is on, check your inbox — otherwise you are signed in.' })
-    }
+    if (mode === 'signup') return setPending('signup')
+  }
+
+  const resend = async () => {
+    setBusy(true); setResent(null)
+    const res = await auth.resendConfirmation(email)
+    setBusy(false)
+    setResent(res.error
+      ? { cls: 'lose', text: res.error }
+      : { cls: 'win', text: `Sent again to ${email}. Give it a minute, and check spam.` })
+  }
+
+  // waiting on the emailed link
+  if (pending) {
+    return (
+      <div>
+        <h2 style={{ marginBottom: 14 }}>👤 Account</h2>
+        <div className="panel" style={{ maxWidth: 460 }}>
+          <div className="verify-icon">📬</div>
+          <h2 style={{ marginBottom: 8 }}>
+            {pending === 'signup' ? 'Confirm your email' : 'Email not confirmed yet'}
+          </h2>
+          <p style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+            {pending === 'signup'
+              ? <>Account created for <b>{email}</b>. Click the link in that email to verify, then come back and sign in.</>
+              : <>You need to click the link sent to <b>{email}</b> before you can sign in.</>}
+          </p>
+          <button className="bet-btn" onClick={resend} disabled={busy}>
+            {busy ? 'Sending…' : 'Resend confirmation email'}
+          </button>
+          <button className="bet-btn secondary" onClick={() => { setPending(null); setMode('signin'); setResent(null) }}>
+            Back to sign in
+          </button>
+          {resent && <div className={`result-msg ${resent.cls}`} style={{ fontSize: 14 }}>{resent.text}</div>}
+          <div className="paytable">
+            Nothing arriving? The default mail service is rate-limited to a few
+            messages an hour and often lands in spam.
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

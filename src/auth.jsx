@@ -56,6 +56,16 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (!error) return { ok: true }
+    // surface the unverified case distinctly so the UI can offer a resend
+    if (error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message)) {
+      return { error: error.message, unconfirmed: true }
+    }
+    return { error: error.message }
+  }
+
+  const resendConfirmation = async email => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
     return error ? { error: error.message } : { ok: true }
   }
 
@@ -74,7 +84,9 @@ export function AuthProvider({ children }) {
       refreshProfile,
       signUp,
       signIn,
-      signOut
+      signOut,
+      resendConfirmation,
+      emailConfirmed: Boolean(session?.user?.email_confirmed_at)
     }}>
       {children}
     </AuthCtx.Provider>
