@@ -12,6 +12,7 @@ import Props from './Props.jsx'
 import Predicts from './Predicts.jsx'
 import WinTotals from './WinTotals.jsx'
 import MyBets from './MyBets.jsx'
+import Futures from './Futures.jsx'
 import WalletPage from './WalletPage.jsx'
 import Account from './Account.jsx'
 import { useAuth } from './auth.jsx'
@@ -29,6 +30,7 @@ const SPORTS = [
   { id: 'sports', label: 'Sportsbook', ico: '🏟️' },
   { id: 'props', label: 'Player Props', ico: '🎯' },
   { id: 'wintotals', label: 'Season Wins', ico: '🏆' },
+  { id: 'futures', label: 'Player Futures', ico: '📈' },
   { id: 'predicts', label: 'Predicts', ico: '🔮' },
   { id: 'mybets', label: 'My Bets', ico: '🧾' }
 ]
@@ -142,6 +144,7 @@ function Home({ go }) {
         <button className="game-tile tile-sp" onClick={() => go('sports')}><span className="big">🏈</span>Sportsbook</button>
         <button className="game-tile tile-pp" onClick={() => go('props')}><span className="big">🎯</span>Player Props</button>
         <button className="game-tile tile-wt" onClick={() => go('wintotals')}><span className="big">🏆</span>Season Wins</button>
+        <button className="game-tile tile-fu" onClick={() => go('futures')}><span className="big">📈</span>Player Futures</button>
         <button className="game-tile tile-pr" onClick={() => go('predicts')}><span className="big">🔮</span>Predicts</button>
       </div>
     </>
@@ -164,6 +167,7 @@ export default function App() {
     sports: <Sportsbook />,
     props: <Props />,
     wintotals: <WinTotals />,
+    futures: <Futures />,
     predicts: <Predicts />,
     mybets: <MyBets />,
     wallet: <WalletPage go={setPage} />,

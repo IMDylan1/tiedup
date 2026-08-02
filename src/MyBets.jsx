@@ -1,7 +1,19 @@
 import React, { useState } from 'react'
 import { useWallet, fmtBtc } from './wallet.jsx'
 import { loadBets, saveBets, fmtOdds, payoutFor, PROP_MULTS, decOf } from './bets.js'
-import { summary, predictOne, winTotals } from './api.js'
+import { summary, predictOne, winTotals, athleteStats, statFor } from './api.js'
+
+// ---- season-long player futures ----
+// Stays open until the season's numbers are final, then grades off the real
+// season total. Lines are always half-points, so a push is impossible.
+async function settleFuture(bet) {
+  if (Date.now() < bet.settlesAt) return null
+  const st = await athleteStats(bet.league, bet.athleteId)
+  const actual = statFor(st, bet.statKey, bet.season)
+  if (actual == null) return null // season not on record yet
+  const over = actual > bet.line
+  return { outcome: (bet.dir === 'over') === over ? 'won' : 'lost', actual }
+}
 
 const summaryCache = {}
 async function getSummary(league, eventId) {
@@ -219,7 +231,18 @@ export default function MyBets() {
     for (const bet of open) {
       try {
         const i = updated.findIndex(b => b.id === bet.id)
-        if (bet.market === 'wintotal') {
+        if (bet.market === 'future') {
+          const res = await settleFuture(bet)
+          if (!res) continue
+          const detail = `Final ${bet.season} ${bet.statLabel}: ${res.actual.toLocaleString()} vs line ${bet.line}`
+          updated[i] = { ...bet, status: res.outcome, detail, settledAt: Date.now() }
+          settled++
+          if (res.outcome === 'won') {
+            const pay = payoutFor(bet.stake, bet.odds)
+            w.credit(pay, `Future: ${bet.label}`)
+            wonBtc += pay
+          }
+        } else if (bet.market === 'wintotal') {
           const outcome = await settleWinTotal(bet)
           if (!outcome) continue
           updated[i] = { ...bet, status: outcome, settledAt: Date.now() }
