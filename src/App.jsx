@@ -12,6 +12,9 @@ import Props from './Props.jsx'
 import Predicts from './Predicts.jsx'
 import WinTotals from './WinTotals.jsx'
 import MyBets from './MyBets.jsx'
+import WalletPage from './WalletPage.jsx'
+import Account from './Account.jsx'
+import { useAuth } from './auth.jsx'
 
 const CASINO = [
   { id: 'blackjack', label: 'Blackjack', ico: '🂡' },
@@ -29,10 +32,14 @@ const SPORTS = [
   { id: 'predicts', label: 'Predicts', ico: '🔮' },
   { id: 'mybets', label: 'My Bets', ico: '🧾' }
 ]
+const ACCOUNT = [
+  { id: 'wallet', label: 'Wallet', ico: '💰' },
+  { id: 'account', label: 'Account', ico: '👤' }
+]
 
 const DEPOSITS = [0.1, 0.5, 1, 5, 25]
 
-function WalletMenu() {
+function WalletMenu({ go }) {
   const w = useWallet()
   const [open, setOpen] = useState(false)
   const [custom, setCustom] = useState('')
@@ -81,9 +88,32 @@ function WalletMenu() {
           <button className="wm-reset" onClick={() => { w.reset(); setOpen(false) }}>
             Reset wallet to 1 ₿
           </button>
+          <button className="wm-reset" onClick={() => { go('wallet'); setOpen(false) }}>
+            Open full wallet →
+          </button>
         </div>
       )}
     </div>
+  )
+}
+
+// Shows who you are, or nudges you to sign in so the balance follows you.
+function AccountPill({ go }) {
+  const auth = useAuth()
+  const w = useWallet()
+  if (!auth.enabled) return null
+  if (auth.user) {
+    return (
+      <button className="acct-pill" onClick={() => go('account')} title="Account">
+        <span className="acct-dot" />
+        {auth.profile?.username ?? 'account'}
+      </button>
+    )
+  }
+  return (
+    <button className="acct-pill guest" onClick={() => go('account')}>
+      Sign in
+    </button>
   )
 }
 
@@ -135,7 +165,9 @@ export default function App() {
     props: <Props />,
     wintotals: <WinTotals />,
     predicts: <Predicts />,
-    mybets: <MyBets />
+    mybets: <MyBets />,
+    wallet: <WalletPage go={setPage} />,
+    account: <Account />
   }
 
   return (
@@ -157,13 +189,20 @@ export default function App() {
             <span className="ico">{g.ico}</span>{g.label}
           </button>
         ))}
+        <div className="side-section">You</div>
+        {ACCOUNT.map(g => (
+          <button key={g.id} className={`side-link ${page === g.id ? 'active' : ''}`} onClick={() => setPage(g.id)}>
+            <span className="ico">{g.ico}</span>{g.label}
+          </button>
+        ))}
       </aside>
 
       <div className="main">
         <header className="topbar">
           <span className="demo-tag">Demo · play money</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <WalletMenu />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AccountPill go={setPage} />
+            <WalletMenu go={setPage} />
           </div>
         </header>
 

@@ -4,5 +4,6 @@ dist
 *.local
 .env
 .env.*
+!.env.example
 .vite
 *.zip
