@@ -7,3 +7,6 @@ dist
 !.env.example
 .vite
 *.zip
+
+# Personal working notes, not for the public repo
+NEXT-STEPS.md
